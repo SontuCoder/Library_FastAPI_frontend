@@ -6,25 +6,59 @@ import Dashboard from "./components/Dashboard";
 import { useAuth } from "./context/AuthContext";
 
 const PrivateRoute = ({ children }) => {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
+  const { user, loading } = useAuth();
+
+  if (loading) return <p>Loading...</p>;
+
+  return !user ? <Navigate to="/login" replace /> : children;
+};
+
+const PublicRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <p>Loading...</p>;
+
+  return user ? <Navigate to="/dashboard" replace /> : children;
 };
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/otp" element={<Otp />} />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <Signup />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/otp"
+          element={
+            <PublicRoute>
+              <Otp />
+            </PublicRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={
-            // <PrivateRoute>
+            <PrivateRoute>
               <Dashboard />
-            // </PrivateRoute>
+            </PrivateRoute>
           }
-          />
+        />
       </Routes>
     </BrowserRouter>
   );

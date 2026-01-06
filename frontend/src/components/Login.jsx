@@ -1,40 +1,50 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import Github from "../assets/github.png";
 import Google from "../assets/google.png";
+import { useState } from "react";
+import axios from 'axios';
+import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
+import api from "../Utils/auth.js"
+
 
 
 export default function Login() {
+    const BackEnd_URL = "http://127.0.0.1:8000"
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const [error, setError] = useState("")
+    const { setUser } = useAuth()
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async(e) => {
         e.preventDefault();
-        login({ email: "user@example.com" });
-        navigate("/dashboard");
+        setError("");
+        const formData = new FormData(e.target);
+        const email = formData.get("email");
+        const password = formData.get("password");
+
+        if (password.length < 6) {
+            setError("Password must have 6 characters");
+            return;
+        }
+        try {
+            const response = await axios.post(`${BackEnd_URL}/auth/login`, {
+                email,
+                password,
+            },{ withCredentials: true });
+            if (response?.data?.status && response?.data?.status !== "success"){
+                setError("Something went wrong");
+                return;
+            }
+            // Fetch and set user data after login
+            const userRes = await api.get("/auth/me");
+            setUser(userRes.data);
+            navigate("/dashboard");
+            toast.success(response.data.message)
+        } catch (err) {
+            console.log(err)
+            setError(err.response?.data?.detail || "Login failed");
+        }
     };
-
-    // const responseGoogleLogin = async (response) => {
-    //     try {
-    //         if (response) {
-    //             const authCode = response['code']
-    //             console.log(authCode)
-    //             toast.success("Login Successful")
-    //         } else {
-    //             throw new Error("Something went wrong");
-    //         }
-    //     } catch (error) {
-    //         console.error(error)
-    //         toast.error("Login Failed")
-    //     }
-    // }
-
-
-    // const GoogleLogin = useGoogleLogin({
-    //     onSuccess: responseGoogleLogin,
-    //     onError: responseGoogleLogin,
-    //     flow: 'auth-code'
-    // })
 
     const loginWithGoogle = () => {
         const state = crypto.randomUUID();
@@ -42,7 +52,7 @@ export default function Login() {
         window.location.href =
             "https://accounts.google.com/o/oauth2/v2/auth" +
             `?client_id=${Google_id}` +
-            "&redirect_uri=http://127.0.0.1:8000/auth/google/callback" +
+            `&redirect_uri=${BackEnd_URL}/auth/google/callback` +
             "&response_type=code" +
             "&scope=openid email profile" +
             `&state=${state}`;
@@ -50,7 +60,7 @@ export default function Login() {
 
     const handleGithubLogin = () => {
         const clientId = "Ov23liGmfdfOTiZYWsh6";
-        const redirectUri = "http://127.0.0.1:8000/auth/github/callback";
+        const redirectUri = `${BackEnd_URL}/auth/github/callback`;
         const state = crypto.randomUUID();
 
         window.location.href =
@@ -68,8 +78,9 @@ export default function Login() {
                 <p className="subtitle">Sign in to your account</p>
 
                 <form className="auth-form" onSubmit={handleSubmit}>
-                    <input type="email" placeholder="you@example.com" required />
-                    <input type="password" placeholder="Password" required />
+                    <input type="email" name="email" placeholder="you@example.com" required />
+                    <input type="password" name="password" placeholder="Password" required />
+                    {error.length >0  && (<p className="error-txt">{error}</p>)}
                     <button className="btn-primary">Sign in</button>
                 </form>
 

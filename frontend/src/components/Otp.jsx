@@ -2,13 +2,17 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";  // Import useAuth
+import api from "../Utils/auth.js"; 
 
 export default function Otp() {
     const navigate = useNavigate();
     const inputsRef = useRef([]);
     const [otp, setOtp] = useState(Array(6).fill(""));
+    const [loading, setLoading] = useState(false);
     const [params] = useSearchParams();
     const token = params.get("token");
+    const { setUser } = useAuth();
 
     // handle input change
     const handleChange = (e, index) => {
@@ -33,8 +37,9 @@ export default function Otp() {
     };
 
     // verify OTP
-    const handleVerify = (e) => {
+    const handleVerify = async (e) => {
         e.preventDefault();
+        
         const finalOtp = otp.join("");
 
         if (finalOtp.length !== 6) {
@@ -43,12 +48,24 @@ export default function Otp() {
         }
 
         try{
-            const response =axios.post("http://127.0.0.1:8000/auth/verify-otp")
+            setLoading(true);
+            const response = await axios.post("http://127.0.0.1:8000/auth/verify-otp",
+                { otp: finalOtp, token },
+                { withCredentials: true }
+            )
+            if (response?.data && response?.data?.status !== "success"){
+                toast.error(response?.data?.message || "Invalid OTP")
+                return;
+            }
+            const userRes = await api.get("/auth/me");
+            setUser(userRes.data);
+            toast.success("OTP verified");
+            navigate("/dashboard");
         } catch {
             toast.error("Somthing wents wrong")
+        }finally {
+            setLoading(false);
         }
-
-        navigate("/dashboard");
     };
 
     const handlePaste = (e) => {
@@ -122,7 +139,9 @@ export default function Otp() {
                         ))}
                     </div>
 
-                    <button className="btn-primary">Verify</button>
+                    <button className="btn-primary">
+                        {loading ? "Verifying..." : "Verify"}
+                    </button>
                 </form>
             </div>
         </div>

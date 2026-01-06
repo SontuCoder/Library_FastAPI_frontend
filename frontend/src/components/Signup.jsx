@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 export default function Signup() {
     const navigate = useNavigate();
     const [error, setError] = useState("")
+    const BackEnd_UR = "http://127.0.0.1:8000"
 
     const handleSubmit = async(e) => {
         e.preventDefault();
@@ -27,10 +28,10 @@ export default function Signup() {
         }
         try {
             setError("")
-            const response = await axios.post("http://127.0.0.1:8000/auth/signup", {
+            const response = await axios.post(`${BackEnd_UR}/auth/signup`, {
                 email,
                 password,
-            });
+            },{ withCredentials: true });
             if (response?.data?.status && response?.data?.status !== "success"){
                 setError("Something went wrong");
                 return;
@@ -53,7 +54,7 @@ export default function Signup() {
     window.location.href =
         "https://accounts.google.com/o/oauth2/v2/auth" +
         `?client_id=${Google_id}` +
-        "&redirect_uri=http://127.0.0.1:8000/auth/google/callback" +
+        `&redirect_uri=${BackEnd_UR}/auth/google/callback` +
         "&response_type=code" +
         "&scope=openid email profile" +
         `&state=${state}`;
@@ -61,7 +62,7 @@ export default function Signup() {
 
     const handleGithubLogin = () => {
         const clientId = "Ov23liGmfdfOTiZYWsh6";
-        const redirectUri = "http://127.0.0.1:8000/auth/github/callback";
+        const redirectUri = encodeURIComponent(`${BackEnd_UR}/auth/github/callback`);
         const state = crypto.randomUUID();
 
         window.location.href =
