@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
 import api from "../Utils/auth.js";
 

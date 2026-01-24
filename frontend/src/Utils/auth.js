@@ -23,7 +23,7 @@ api.interceptors.response.use(
 
       try {
         await api.post("/auth/refresh-token");
-        return api(originalRequest); // retry original call
+        return api(originalRequest);
       } catch {
         // window.location.href = "/login";
       }

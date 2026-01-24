@@ -1,7 +1,84 @@
-import React from 'react'
+import React, { useEffect, useState } from "react";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+
+
+
+import { useAuth } from "../context/AuthContext.jsx";
+import { admin_dashboard } from "../Utils/admin_dashboard.js";
+import Skeleton from "./Sceliton.jsx";
+
+dayjs.extend(relativeTime);
 
 const DashboardSection = () => {
+    const { user, loading: authLoading } = useAuth();
+
+    const [dashLoading, setDashLoading] = useState(false);
+    const [dashData, setDashData] = useState(null);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (!user) return;
+
+        const loadDashboard = async () => {
+            try {
+                setDashLoading(true);
+                setError("");
+
+                if (user.role === "admin") {
+                    const data = await admin_dashboard();
+                    setDashData(data);
+                    console.log(data)
+                } else if (user.role === "student") {
+                    setDashData(null);
+                } else {
+                    setError("Invalid role");
+                }
+            } catch (err) {
+                setError("Something went wrong");
+            } finally {
+                setDashLoading(false);
+            }
+        };
+
+        loadDashboard();
+    }, [user]);
+
+    const bookPersentSign = (data) => {
+        return Number(data) > 0 ? "+" : "-";
+    } 
+
+
+    if (authLoading) {
+        return <p>Authenticating...</p>;
+    }
+
+    if (error) {
+        return <h1 className="section-title">{error}</h1>;
+    }
+
+    if (dashLoading) {
+        return (
+            <div className="section">
+
+            <div className="stats-grid">
+
+                <Skeleton className="stat-card height-80" />
+                <Skeleton className="stat-card height-80" />
+                <Skeleton className="stat-card height-80" />
+                <Skeleton className="stat-card height-80" />
+
+            </div>
+
+                <Skeleton className="card" />
+        </div>
+        );
+    }
+
+
     return (
+
         <div className="section">
             <h1 className="section-title">Dashboard Overview</h1>
 
@@ -22,8 +99,8 @@ const DashboardSection = () => {
                     </div>
                     <div className="stat-content">
                         <div className="stat-label">Total Books</div>
-                        <div className="stat-value">12,459</div>
-                        <div className="stat-change positive">+12% from last month</div>
+                        <div className="stat-value">{Number(dashData?.total_books || '00').toLocaleString()}</div>
+                        <div className={dashData?.books_percentage_change < 0 ? "stat-change negative" : "stat-change positive"}>{bookPersentSign(dashData?.books_percentage_change || 0)}{Math.abs(dashData?.books_percentage_change || 0)}% from last month</div>
                     </div>
                 </div>
 
@@ -43,8 +120,7 @@ const DashboardSection = () => {
                     </div>
                     <div className="stat-content">
                         <div className="stat-label">Books Issued</div>
-                        <div className="stat-value">3,264</div>
-                        <div className="stat-change positive">+8% from last month</div>
+                        <div className="stat-value">{Number(dashData?.total_issued_books || "00").toLocaleString()}</div>
                     </div>
                 </div>
 
@@ -65,8 +141,7 @@ const DashboardSection = () => {
                     </div>
                     <div className="stat-content">
                         <div className="stat-label">Active Students</div>
-                        <div className="stat-value">8,429</div>
-                        <div className="stat-change positive">+18% from last month</div>
+                        <div className="stat-value">{Number(dashData?.total_students || "00").toLocaleString()}</div>
                     </div>
                 </div>
 
@@ -86,17 +161,17 @@ const DashboardSection = () => {
                     </div>
                     <div className="stat-content">
                         <div className="stat-label">Overdue Books</div>
-                        <div className="stat-value">127</div>
-                        <div className="stat-change negative">+3% from last week</div>
+                        <div className="stat-value">{Number(dashData?.overdue_issued_books || "00").toLocaleString()}</div>
                     </div>
                 </div>
             </div>
 
-            <div className="content-grid">
-                <div className="card">
-                    <h2 className="card-title">Recent Activity</h2>
-                    <div className="activity-list">
-                        <div className="activity-item">
+            <div className="card">
+                <h2 className="card-title">Recent Activity</h2>
+                <div className="activity-list">
+                    
+                    {(dashData?.popular_books.length >0 )? dashData?.popular_books.map((book, index) => (
+                        <div className="activity-item" key={index}>
                             <div className="activity-icon blue">
                                 <svg
                                     width="16"
@@ -111,128 +186,20 @@ const DashboardSection = () => {
                             </div>
                             <div className="activity-content">
                                 <div className="activity-text">
-                                    New book added: "Advanced React Patterns"
+                                    {book.name}
                                 </div>
-                                <div className="activity-time">2 minutes ago</div>
-                            </div>
-                        </div>
-
-                        <div className="activity-item">
-                            <div className="activity-icon green">
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                >
-                                    <polyline points="20 6 9 17 4 12" />
-                                </svg>
+                                <div className="activity-auther">{dayjs(book.added_at).fromNow()}</div>
                             </div>
                             <div className="activity-content">
                                 <div className="activity-text">
-                                    Book issued to Sarah Johnson (ID: ST-2847)
+                                    By, {book.author}
                                 </div>
-                                <div className="activity-time">15 minutes ago</div>
+                                <div className="activity-auther">edition: {book.edition}</div>
                             </div>
                         </div>
-
-                        <div className="activity-item">
-                            <div className="activity-icon purple">
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                >
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                    <circle cx="9" cy="7" r="4" />
-                                </svg>
-                            </div>
-                            <div className="activity-content">
-                                <div className="activity-text">
-                                    New student registered: Michael Chen
-                                </div>
-                                <div className="activity-time">1 hour ago</div>
-                            </div>
-                        </div>
-
-                        <div className="activity-item">
-                            <div className="activity-icon green">
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                >
-                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                                </svg>
-                            </div>
-                            <div className="activity-content">
-                                <div className="activity-text">
-                                    Book returned: "Clean Code" by Robert Martin
-                                </div>
-                                <div className="activity-time">2 hours ago</div>
-                            </div>
-                        </div>
-
-                        <div className="activity-item">
-                            <div className="activity-icon blue">
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                >
-                                    <path d="M12 5v14M5 12h14" />
-                                </svg>
-                            </div>
-                            <div className="activity-content">
-                                <div className="activity-text">
-                                    New book added: "JavaScript: The Good Parts"
-                                </div>
-                                <div className="activity-time">3 hours ago</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="card">
-                    <h2 className="card-title">Popular Books</h2>
-                    <div className="book-list">
-                        <div className="book-item">
-                            <div className="book-rank">1</div>
-                            <div className="book-name">Clean Code</div>
-                            <div className="book-count">284 issues</div>
-                        </div>
-                        <div className="book-item">
-                            <div className="book-rank">2</div>
-                            <div className="book-name">Design Patterns</div>
-                            <div className="book-count">267 issues</div>
-                        </div>
-                        <div className="book-item">
-                            <div className="book-rank">3</div>
-                            <div className="book-name">The Pragmatic Programmer</div>
-                            <div className="book-count">243 issues</div>
-                        </div>
-                        <div className="book-item">
-                            <div className="book-rank">4</div>
-                            <div className="book-name">You Don't Know JS</div>
-                            <div className="book-count">218 issues</div>
-                        </div>
-                        <div className="book-item">
-                            <div className="book-rank">5</div>
-                            <div className="book-name">Refactoring</div>
-                            <div className="book-count">195 issues</div>
-                        </div>
-                    </div>
+                    )):(
+                        <div className="activity-auther">No popular books.</div>
+                    )}
                 </div>
             </div>
         </div>

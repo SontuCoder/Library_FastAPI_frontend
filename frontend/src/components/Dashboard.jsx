@@ -12,7 +12,6 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const [activeSection, setActiveSection] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   return (
     <div className="dashboard-container">
@@ -235,18 +234,15 @@ export default function Dashboard() {
               <span className="notification-badge">3</span>
             </button>
 
-            <div
-              className="profile-button"
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-            >
+            <div className="profile-button" >
               <img
                 src="/admin-avatar.png"
                 alt="Admin"
                 className="profile-avatar"
               />
-              <div className="profile-info">
-                <div className="profile-name">Admin User</div>
-                <div className="profile-role">Super Admin</div>
+              <div className="profile-info" onClick={() => logout()} >
+                <div className="profile-name">{user?.role[0].toUpperCase() + user?.role.substring(1)}</div>
+                <div className="profile-role">Logout</div>
               </div>
               <svg
                 width="16"
@@ -271,6 +267,7 @@ export default function Dashboard() {
           {activeSection === "students" && <StudentsSection />}
           {activeSection === "admins" && <AdminsSection />}
         </div>
+
       </main>
     </div>
   );
